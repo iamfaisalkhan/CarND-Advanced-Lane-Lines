@@ -49,7 +49,7 @@ def mag_thresh(img, sobel_kernel=3, mag_thresh=(0, 255)):
     return binary_output
 
 def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
-	    # Apply the following steps to img
+    # Apply the following steps to img
     # 1) Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # 2) Take the gradient in x and y separately
@@ -67,4 +67,32 @@ def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
     binary_output[(gradient_dir >= thresh[0]) & (gradient_dir <= thresh[1])] = 1
     
     return binary_output
+
+def hsv_filter(img):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # Yello color range
+    lower_yellow = np.array([20, 100, 200])
+    upper_yellow = np.array([85, 255, 255])
+
+    yellow_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    res = cv2.bitwise_and(img, img, mask=yellow_mask)
+    print ("xx")
+    print (np.nonzero(yellow_mask))
+    print ("xx")
+    # White color range. 
+    sensitivy = 45
+    lower_white = np.array([0, 0, 255 - sensitivy])
+    upper_white = np.array([255, sensitivy, 255])
+    white_mask = cv2.inRange(hsv, lower_white, upper_white)
+    res2 = cv2.bitwise_and(img, img, mask=white_mask)
+    
+    # Finally combine the white and yello image to get a single image. 
+    binary_output = np.zeros_like(img[:, :, 0])
+    binary_output[ (yellow_mask==1) | (white_mask == 1)]  = 255
+
+    return binary_output
+
+
+    
 
