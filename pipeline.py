@@ -20,6 +20,35 @@ from filters import color_filter
 import matplotlib.pyplot as plt
 
 
+def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
+    # read in image
+    img = cv2.imread(fname)
+
+    # apply camera distortion
+    img = cv2.undistort(img, mtx, dist, None, mtx)
+    
+    ksize = 9 # Choose a larger odd number to smooth gradient measurements
+
+    # # Apply each of the thresholding functions
+    gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(10, 90))
+    grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(10, 90))
+        
+    mag_binary = mag_thresh(img, sobel_kernel=ksize, mag_thresh=(100, 255))
+    # dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
+    color_binary = color_filter(img, sthresh=(100, 255), vthresh=(50, 255))
+
+    combined = np.zeros_like(img[:,:,0])
+    combined [ ( (gradx == 1) | (grady == 1)) & color_binary == 1] = 255
+
+    result = combined
+
+    if write:
+        cv2.imwrite(write_name, result)
+
+    if display:
+        cv2.imshow('img', result)
+        cv2.waitKey(500)
+
 if __name__ == "__main__":
 
     # Load previously calibration camera calibraton parameters.
@@ -28,31 +57,7 @@ if __name__ == "__main__":
     images = glob.glob("test_images/test*.jpg")
 
     for idx, fname in enumerate(images):
-
-        # read in image
-        img = cv2.imread(fname)
-
-        # apply camera distortion
-        img = cv2.undistort(img, mtx, dist, None, mtx)
-    
-        ksize = 9 # Choose a larger odd number to smooth gradient measurements
-
-        # # Apply each of the thresholding functions
-        gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(12, 100))
-        grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(25, 100))
-        mag_binary = mag_thresh(img, sobel_kernel=ksize, mag_thresh=(100, 255))
-        dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
-        color_binary = color_filter(img, sthresh=(100, 255), vthresh=(50, 255))
-
-        combined = np.zeros_like(img[:,:,0])
-        combined[ 
-                    ((gradx == 1) & (grady == 1)) |
-                    ((mag_binary == 1) & 
-                    (dir_binary == 1)) |
-                    (color_binary == 1)
-                ] = 255
-
-        result = combined
-
         write_name = "./test_images/tracked" + str(idx) + ".jpg"
-        cv2.imwrite(write_name, result)
+        pipeline(fname, mtx, dist, display=False, write=True, write_name=write_name)
+
+        
