@@ -15,7 +15,7 @@ from calibration import test_calibration
 from filters import abs_sobel_thresh
 from filters import mag_thresh
 from filters import dir_threshold
-from filters import hsv_filter
+from filters import color_filter
 
 import matplotlib.pyplot as plt
 
@@ -37,19 +37,22 @@ if __name__ == "__main__":
     
         ksize = 9 # Choose a larger odd number to smooth gradient measurements
 
-        img = hsv_filter(img)
-        # continue
-
         # # Apply each of the thresholding functions
-        # gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(12, 100))
-        # grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(25, 100))
-        # mag_binary = mag_thresh(img, sobel_kernel=ksize, mag_thresh=(100, 255))
-        # dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
+        gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(12, 100))
+        grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(25, 100))
+        mag_binary = mag_thresh(img, sobel_kernel=ksize, mag_thresh=(100, 255))
+        dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
+        color_binary = color_filter(img, sthresh=(100, 255), vthresh=(50, 255))
 
-        # combined = np.zeros_like(img[:,:,0])
-        # combined[((gradx == 1) & (grady == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 255
+        combined = np.zeros_like(img[:,:,0])
+        combined[ 
+                    ((gradx == 1) & (grady == 1)) |
+                    ((mag_binary == 1) & 
+                    (dir_binary == 1)) |
+                    (color_binary == 1)
+                ] = 255
 
-        result = img
+        result = combined
 
         write_name = "./test_images/tracked" + str(idx) + ".jpg"
         cv2.imwrite(write_name, result)

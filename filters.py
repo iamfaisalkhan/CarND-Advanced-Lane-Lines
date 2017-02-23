@@ -1,13 +1,11 @@
 
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import pickle
 
 def abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(0, 255)):
     # 1) Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # 2) Take the derivative in x or y given orient = 'x' or 'y'
     orient_mask = [1, 0]
     if orient == 'y':
@@ -30,7 +28,7 @@ def abs_sobel_thresh(img, orient='x', sobel_kernel=3, thresh=(0, 255)):
 def mag_thresh(img, sobel_kernel=3, mag_thresh=(0, 255)):
         # Apply the following steps to img
     # 1) Convert to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # 2) Take the gradient in x and y separately
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=sobel_kernel)
     sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=sobel_kernel)
@@ -68,31 +66,21 @@ def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
     
     return binary_output
 
-def hsv_filter(img):
+def color_filter(img, sthresh=(0, 255), vthresh=(0, 255)):
+    hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+
+    s_channel = hls[:, :, 2]
+    s_binary = np.zeros_like(s_channel)
+    s_binary[ (s_channel > sthresh[0]) & (s_channel <= sthresh[1]) ] = 1
+
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    v_channel = hsv[:, :, 2]
+    v_binary = np.zeros_like(v_channel)
+    v_binary[ (v_channel > vthresh[0]) & (v_channel <= vthresh[1])] = 1
 
-    # Yello color range
-    lower_yellow = np.array([20, 100, 200])
-    upper_yellow = np.array([85, 255, 255])
+    output = np.zeros_like(s_channel)
+    output[(s_binary == 1) & (v_binary == 1)] = 1
 
-    yellow_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
-    res = cv2.bitwise_and(img, img, mask=yellow_mask)
-    print ("xx")
-    print (np.nonzero(yellow_mask))
-    print ("xx")
-    # White color range. 
-    sensitivy = 45
-    lower_white = np.array([0, 0, 255 - sensitivy])
-    upper_white = np.array([255, sensitivy, 255])
-    white_mask = cv2.inRange(hsv, lower_white, upper_white)
-    res2 = cv2.bitwise_and(img, img, mask=white_mask)
-    
-    # Finally combine the white and yello image to get a single image. 
-    binary_output = np.zeros_like(img[:, :, 0])
-    binary_output[ (yellow_mask==1) | (white_mask == 1)]  = 255
-
-    return binary_output
-
-
+    return output
     
 
