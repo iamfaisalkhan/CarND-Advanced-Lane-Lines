@@ -2,7 +2,7 @@
 # @Author: Faisal Khan
 # @Date:   2017-02-22 14:48:00
 # @Last Modified by:   Faisal Khan
-# @Last Modified time: 2017-02-23 16:37:29
+# @Last Modified time: 2017-02-24 17:26:56
 
 import cv2
 import numpy as np
@@ -17,7 +17,9 @@ from filters import mag_thresh
 from filters import dir_threshold
 from filters import color_filter
 
-from viz import mosaic
+from viz import image_mosaic
+
+from tracker import LaneTracker
 
 import matplotlib.pyplot as plt
 
@@ -42,13 +44,6 @@ def getWarpedImage(img):
             [offset, img.shape[0]]
         ]);
 
-    # x1 = int(src[2][0])
-    # y1 = int(src[2][1])
-    # x2 = int(src[3][0])
-    # y2 = int(src[3][1])
-
-    # cv2.line(img, (x1, y1), (x2, y2), [255, 0, 0]);
-
     M = cv2.getPerspectiveTransform(src, dst)
     Minv = cv2.getPerspectiveTransform(dst, src)
     warped = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
@@ -71,6 +66,12 @@ def applyFilters(img):
 
     return combined
 
+def window_mask(window_width, window_height, img, centeroid, level):
+    output = np.zeros_like(img)
+    output[int(img.shape[0]-(level+1)*window_height):int(img.shape[0]-level*window_height),
+           max(0, int(centeroid-window_width)):min(int(centeroid + window_width),
+            img.shape[1])] =1
+    return output
 
 def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     # read in image
@@ -81,15 +82,96 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     
     M, Minv, warped = getWarpedImage(img)
     
-    processedImg = applyFilters(warped)
+    binary_warped = applyFilters(warped)
 
-    result = processedImg
+    window_width = 25
+    window_height = 80
+
+    tracker = LaneTracker(window_width, window_height, 25, 10/720, 4/384)
+
+    window_centroids = tracker.sliding_window_centroids(binary_warped)
+
+    l_points = np.zeros_like(binary_warped)
+    r_points = np.zeros_like(binary_warped)
+
+    rightx = []
+    leftx = []
+
+    for level in range(0, len(window_centroids)):
+
+        leftx.append(window_centroids[level][0])
+        rightx.append(window_centroids[level][1])
+
+        l_mask = window_mask(window_width, window_height, binary_warped, window_centroids[level][0], level)
+        r_mask = window_mask(window_width, window_height, binary_warped, window_centroids[level][1], level)
+
+        l_points[(l_points == 255) | ((l_mask == 1))] = 255
+        r_points[(r_points == 255) | ((r_mask == 1))] = 255
+
+    template = np.array(r_points + l_points, np.uint8)
+    zero_channel = np.zeros_like(template)
+    template = np.array(cv2.merge((zero_channel, template, zero_channel)), np.uint8)
+    warpage = np.array(cv2.merge( (binary_warped, binary_warped, binary_warped)), np.uint8)
+    result = cv2.addWeighted(warpage, 1, template, 0.5, 0.0)
+
+    yvals = range(0, binary_warped.shape[0])
+
+    # y value of the window centroid
+    y_centers = np.arange(binary_warped.shape[0]-(window_height/2), 0, -window_height)
+
+    # Compute polynomial fit
+    left_fit = np.polyfit(y_centers, leftx, 2)
+    left_fitx = left_fit[0]*yvals*yvals + left_fit[1]*yvals + left_fit[2]
+    left_fitx = np.array(left_fitx, np.int32)
+
+    right_fit = np.polyfit(y_centers, rightx, 2)
+    right_fitx = right_fit[0]*yvals*yvals + right_fit[1]*yvals + right_fit[2]
+    right_fitx = np.array(right_fitx, np.int32)
+
+    left_lane = np.array(list(zip(
+                    np.concatenate((left_fitx-window_width/2, left_fitx[::-1]+window_width/2), axis=0),
+                    np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
+    right_lane = np.array(list(zip(
+                    np.concatenate((right_fitx-window_width/2, right_fitx[::-1]+window_width/2), axis=0),
+                    np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
+    middle_lane = np.array(list(zip(
+                    np.concatenate((right_fitx-window_width/2, right_fitx[::-1]+window_width/2), axis=0),
+                    np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
+
+    road = np.zeros_like(img)
+    road_bkg = np.zeros_like(img)
+
+    cv2.fillPoly(road, [left_lane], color=[255, 0, 0])
+    cv2.fillPoly(road, [right_lane], color=[0, 0, 255])
+    cv2.fillPoly(road_bkg, [left_lane], color=[255, 255, 255])
+    cv2.fillPoly(road_bkg, [right_lane], color=[255, 255, 255])
+
+    road_warped = cv2.warpPerspective(road, Minv, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
+    road_warped_bkg = cv2.warpPerspective(road_bkg, Minv, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
+
+    base = cv2.addWeighted(img, 1.0, road_warped_bkg, -1.0, 0.0)
+    final_road = cv2.addWeighted(base, 1.0, road_warped, 1.0, 0.0)
+
+    ym_per_pix = tracker.ym_per_pix
+    xm_per_pix = tracker.xm_per_pix
+
+    curve_fit_cr = np.polyfit(np.array(res_yvals, np.float32)*ym_per_pix, np.array(leftx, np.float32) * xm_per_pix, 2)
+    curverad = (( 1 + (2 * curve_fit_cr[0] * yvals[-1] * ym_per_pix + curve_fit_cr[1])**2)**1.5) / np.absolute(2*curve_fit_cr[0])
+
+
+    camera_center = (left_fitx[-1] + right_fitx[-1])/2
+    camera_diff = (camera_center - warped.shape[1]/2)*xm_per_pix
+    side_pos = 'left'
+    if center_diff <= 0:
+        side_pos = 'right'
+
+    diagnosticImg = image_mosaic(img, warped, result, final_road)
 
     if write:
-        cv2.imwrite(write_name, result)
+        cv2.imwrite(write_name, diagnosticImg)
 
     if display:
-        cv2.imshow('img', result)
+        cv2.imshow('img', diagnosticImg)
         cv2.waitKey(500)
 
 if __name__ == "__main__":
@@ -103,3 +185,4 @@ if __name__ == "__main__":
         pipeline(fname, mtx, dist, display=False, write=True, write_name=write_name)
 
         
+

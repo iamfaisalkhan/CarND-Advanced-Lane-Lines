@@ -1,0 +1,5 @@
+Things to try
+-------------
+
+1. Minumum number of pixels with a sliding window not to far away from the previous 'prediction'.
+2. 
