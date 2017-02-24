@@ -18,9 +18,17 @@ def thumbnail(img):
 def image_mosaic(mainImage, *images):
     mosaic = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
+    cords = [
+        [0, 240, 1280, 1600],
+        [0, 240, 1600, 1920],
+        [240, 480, 1280, 1600],
+        [240, 480, 1600, 1920],
+    ]
+
     mosaic[0:720, 0:1280] = mainImage
     for ind, image in enumerate(images):
-       mosaic[(ind*240):(ind*240)+240, (index*)] = thumbnail(image)
+        cord = cords[ind]
+        mosaic[cord[0]:cord[1], cord[2]:cord[3]] = thumbnail(image)
 
     return mosaic
 
@@ -31,6 +39,5 @@ image2 = cv2.imread('test_images//test3.jpg')
 mosaic = image_mosaic(image0, image1, image2)
 
 cv2.imshow('img', mosaic)
-cv2.waitKey(1000)
-
+cv2.imwrite('test_images/mosaic.jpg', mosaic)
 

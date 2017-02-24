@@ -17,6 +17,8 @@ from filters import mag_thresh
 from filters import dir_threshold
 from filters import color_filter
 
+from viz import mosaic
+
 import matplotlib.pyplot as plt
 
 def getWarpedImage(img):
