@@ -27,7 +27,7 @@ def getWarpedImage(img):
     bot_width = .76
     mid_width = .08
     height_pct = .62
-    bottom_trim = .955
+    bottom_trim = .935
 
     src = np.float32([
             [img.shape[1]*(.5-mid_width/2), img.shape[0]*height_pct],
@@ -54,15 +54,15 @@ def applyFilters(img):
     ksize = 9 # Choose a larger odd number to smooth gradient measurements
 
     # # Apply each of the thresholding functions
-    gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(10, 90))
-    grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(10, 90))
+    gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(12, 125))
+    grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(25, 125))
         
     mag_binary = mag_thresh(img, sobel_kernel=ksize, mag_thresh=(100, 255))
-    # dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
+    dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
     color_binary = color_filter(img, sthresh=(100, 255), vthresh=(50, 255))
 
     combined = np.zeros_like(img[:,:,0])
-    combined [ ( (gradx == 1) & (grady == 1)) | color_binary == 1] = 255
+    combined [ ( (gradx == 1) & (grady == 1) | color_binary == 1)] = 255
 
     return combined
 
@@ -79,7 +79,7 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
 
     # apply camera distortion
     img = cv2.undistort(img, mtx, dist, None, mtx)
-    
+
     M, Minv, warped = getWarpedImage(img)
     
     binary_warped = applyFilters(warped)
@@ -87,7 +87,7 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     window_width = 25
     window_height = 80
 
-    tracker = LaneTracker(window_width, window_height, 25, 10/720, 4/384)
+    tracker = LaneTracker(window_width, window_height, 10, 30/720, 3.7/700)
 
     window_centroids = tracker.sliding_window_centroids(binary_warped)
 
@@ -112,9 +112,9 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     zero_channel = np.zeros_like(template)
     template = np.array(cv2.merge((zero_channel, template, zero_channel)), np.uint8)
     warpage = np.array(cv2.merge( (binary_warped, binary_warped, binary_warped)), np.uint8)
-    result = cv2.addWeighted(warpage, 1, template, 0.5, 0.0)
+    warpage = cv2.addWeighted(warpage, 1, template, 0.5, 0.0)
 
-    yvals = range(0, binary_warped.shape[0])
+    yvals = np.arange(0, binary_warped.shape[0])
 
     # y value of the window centroid
     y_centers = np.arange(binary_warped.shape[0]-(window_height/2), 0, -window_height)
@@ -134,8 +134,8 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     right_lane = np.array(list(zip(
                     np.concatenate((right_fitx-window_width/2, right_fitx[::-1]+window_width/2), axis=0),
                     np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
-    middle_lane = np.array(list(zip(
-                    np.concatenate((right_fitx-window_width/2, right_fitx[::-1]+window_width/2), axis=0),
+    inner_lane = np.array(list(zip(
+                    np.concatenate((left_fitx+window_width/2, right_fitx[::-1]+window_width/2), axis=0),
                     np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
 
     road = np.zeros_like(img)
@@ -143,6 +143,7 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
 
     cv2.fillPoly(road, [left_lane], color=[255, 0, 0])
     cv2.fillPoly(road, [right_lane], color=[0, 0, 255])
+    cv2.fillPoly(road, [inner_lane], color=[0, 255, 0])
     cv2.fillPoly(road_bkg, [left_lane], color=[255, 255, 255])
     cv2.fillPoly(road_bkg, [right_lane], color=[255, 255, 255])
 
@@ -150,22 +151,39 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     road_warped_bkg = cv2.warpPerspective(road_bkg, Minv, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
 
     base = cv2.addWeighted(img, 1.0, road_warped_bkg, -1.0, 0.0)
-    final_road = cv2.addWeighted(base, 1.0, road_warped, 1.0, 0.0)
+    result = cv2.addWeighted(base, 1.0, road_warped, 0.4, 0.0)
 
     ym_per_pix = tracker.ym_per_pix
     xm_per_pix = tracker.xm_per_pix
 
-    curve_fit_cr = np.polyfit(np.array(res_yvals, np.float32)*ym_per_pix, np.array(leftx, np.float32) * xm_per_pix, 2)
+    curve_fit_cr = np.polyfit(np.array(y_centers, np.float32)*ym_per_pix, np.array(leftx, np.float32) * xm_per_pix, 2)
     curverad = (( 1 + (2 * curve_fit_cr[0] * yvals[-1] * ym_per_pix + curve_fit_cr[1])**2)**1.5) / np.absolute(2*curve_fit_cr[0])
 
 
     camera_center = (left_fitx[-1] + right_fitx[-1])/2
-    camera_diff = (camera_center - warped.shape[1]/2)*xm_per_pix
+    center_diff = (camera_center - binary_warped.shape[1]/2)*xm_per_pix
     side_pos = 'left'
     if center_diff <= 0:
         side_pos = 'right'
 
-    diagnosticImg = image_mosaic(img, warped, result, final_road)
+    cv2.putText(result, 
+            'Radius of Curvature = ' + str(round(curverad)) + '(m)', 
+            (50, 50),
+            cv2.FONT_HERSHEY_SIMPLEX, 
+            1, 
+            (255, 255, 255),
+            2
+    )
+    cv2.putText(result,
+            'Vehicle is ' + str(abs(round(center_diff, 3))) + 'm ' + side_pos + ' of center',
+            (50, 100),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2
+    )
+
+    diagnosticImg = image_mosaic(result, img, warped, warpage)
 
     if write:
         cv2.imwrite(write_name, diagnosticImg)
