@@ -108,9 +108,7 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
         l_points[(l_points == 255) | ((l_mask == 1))] = 255
         r_points[(r_points == 255) | ((r_mask == 1))] = 255
 
-    template = np.array(r_points + l_points, np.uint8)
-    zero_channel = np.zeros_like(template)
-    template = np.array(cv2.merge((zero_channel, template, zero_channel)), np.uint8)
+    template = np.array(cv2.merge((l_points, r_points, np.zeros_like(l_points))), np.uint8)
     warpage = np.array(cv2.merge( (binary_warped, binary_warped, binary_warped)), np.uint8)
     warpage = cv2.addWeighted(warpage, 1, template, 0.5, 0.0)
 
