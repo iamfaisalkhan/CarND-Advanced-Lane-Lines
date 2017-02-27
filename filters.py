@@ -66,7 +66,7 @@ def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
     
     return binary_output
 
-def color_filter(img, sthresh=(0, 255), vthresh=(0, 255)):
+def color_threshold(img, sthresh=(0, 255), vthresh=(0, 255)):
     hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 
     s_channel = hls[:, :, 2]
@@ -83,12 +83,11 @@ def color_filter(img, sthresh=(0, 255), vthresh=(0, 255)):
 
     return output
 
-def color_thresholding(img):
+def color_filter(img):
     hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 
     yellow = cv2.inRange(hls, (10, 0, 200), (40, 200, 255))
     white = cv2.inRange(hls, (10, 200, 150), (40, 255, 255))
-
     
     output = np.zeros_like(hls[:, :, 1])
 

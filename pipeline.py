@@ -2,7 +2,7 @@
 # @Author: Faisal Khan
 # @Date:   2017-02-22 14:48:00
 # @Last Modified by:   Faisal Khan
-# @Last Modified time: 2017-02-24 17:26:56
+# @Last Modified time: 2017-02-27 10:47:18
 
 import cv2
 import numpy as np
@@ -44,22 +44,27 @@ def getWarpedImage(img):
             [offset, img.shape[0]]
         ]);
 
+    copy = np.copy(img)
+    for pts in src:
+        cv2.circle(copy, (pts[0], pts[1]), 5, (0, 0, 255), -1)
+        
     M = cv2.getPerspectiveTransform(src, dst)
     Minv = cv2.getPerspectiveTransform(dst, src)
     warped = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
 
-    return M, Minv, warped
+    return M, Minv, warped, copy
 
 def applyFilters(img):
     ksize = 9 # Choose a larger odd number to smooth gradient measurements
 
     # # Apply each of the thresholding functions
-    gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(12, 125))
-    grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(25, 125))
+    gradx = abs_sobel_thresh(img, orient='x', sobel_kernel=ksize, thresh=(12, 255))
+    grady = abs_sobel_thresh(img, orient='y', sobel_kernel=ksize, thresh=(25, 255))
         
-    mag_binary = mag_thresh(img, sobel_kernel=ksize, mag_thresh=(100, 255))
-    dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
-    color_binary = color_filter(img, sthresh=(100, 255), vthresh=(50, 255))
+    # mag_binary = mag_thresh(img, sobel_kernel=ksize, mag_thresh=(100, 255))
+    # dir_binary = dir_threshold(img, sobel_kernel=ksize, thresh=(0, np.pi/2))
+
+    color_binary = color_filter(img)
 
     combined = np.zeros_like(img[:,:,0])
     combined [ ( (gradx == 1) & (grady == 1) | color_binary == 1)] = 255
@@ -80,18 +85,17 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     # apply camera distortion
     img = cv2.undistort(img, mtx, dist, None, mtx)
 
-    M, Minv, warped = getWarpedImage(img)
+    M, Minv, warped, copy = getWarpedImage(img)
     
     binary_warped = applyFilters(warped)
 
-    window_width = 25
+    window_width = 35
     window_height = 80
+    margin = 45
 
-    tracker = LaneTracker(window_width, window_height, 10, 30/720, 3.7/700)
+    tracker = LaneTracker(window_width, window_height, margin, 30/720, 3.7/700)
 
     window_centroids = tracker.sliding_window_centroids(binary_warped)
-
-    print (window_centroids)
 
     l_points = np.zeros_like(binary_warped)
     r_points = np.zeros_like(binary_warped)
@@ -184,9 +188,7 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
     )
 
     # Search area for next frame.
-
-
-    diagnosticImg = image_mosaic(result, img, warped, warpage)
+    diagnosticImg = image_mosaic(result, copy, img, binary_warped, warped, warpage)
 
     if write:
         cv2.imwrite(write_name, diagnosticImg)

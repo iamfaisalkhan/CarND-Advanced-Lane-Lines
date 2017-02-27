@@ -2,7 +2,7 @@
 # @Author: Faisal Khan
 # @Date:   2017-02-23 16:58:07
 # @Last Modified by:   Faisal Khan
-# @Last Modified time: 2017-02-24 14:14:45
+# @Last Modified time: 2017-02-27 16:42:08
 
 import numpy as np
 import cv2
@@ -26,6 +26,9 @@ def image_mosaic(mainImage, *images):
         [720, 1080, 0, 640],
     ]
 
+    if mainImage.shape[0] != 1280 or mainImage.shape[1] != 720:
+        mainImage = cv2.resize(mainImage, (1280, 720), interpolation=cv2.INTER_AREA)
+
     mosaic[0:720, 0:1280] = mainImage
 
     for ind, image in enumerate(images):
@@ -35,13 +38,4 @@ def image_mosaic(mainImage, *images):
 
     return mosaic
 
-image0 = cv2.imread('test_images//test1.jpg')
-image1 = cv2.imread('test_images//test2.jpg')
-image2 = cv2.imread('test_images//test3.jpg')
-image3 = cv2.imread('test_images//test4.jpg')
-
-mosaic = image_mosaic(image0, image1, image2, image3)
-
-cv2.imshow('img', mosaic)
-cv2.imwrite('test_images/mosaic.jpg', mosaic)
 

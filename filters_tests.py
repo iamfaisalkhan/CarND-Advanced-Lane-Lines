@@ -8,8 +8,6 @@ from viz import image_mosaic
 import cv2
 import numpy as np
 
-
-
 mtx, dist = load_calibration_matrix('camera_cal/dist_pickle.p')
 images = glob.glob("test_images/test*.jpg")
 
