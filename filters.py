@@ -82,5 +82,21 @@ def color_filter(img, sthresh=(0, 255), vthresh=(0, 255)):
     output[(s_binary == 1) & (v_binary == 1)] = 1
 
     return output
-    
 
+def color_thresholding(img):
+    hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+
+    yellow = cv2.inRange(hls, (10, 0, 200), (40, 200, 255))
+    white = cv2.inRange(hls, (10, 200, 150), (40, 255, 255))
+
+    
+    output = np.zeros_like(hls[:, :, 1])
+
+    nonzero = yellow.nonzero()
+    output[nonzero[0], nonzero[1]] = 1
+    nonzero = white.nonzero()
+    output[nonzero[0], nonzero[1]] = 1
+
+    return output
+
+    

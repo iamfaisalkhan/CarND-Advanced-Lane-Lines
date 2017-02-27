@@ -91,6 +91,8 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
 
     window_centroids = tracker.sliding_window_centroids(binary_warped)
 
+    print (window_centroids)
+
     l_points = np.zeros_like(binary_warped)
     r_points = np.zeros_like(binary_warped)
 
@@ -180,6 +182,9 @@ def pipeline(img, mtx, dist, display=False, write=True, write_name='out.jpg'):
             (255, 255, 255),
             2
     )
+
+    # Search area for next frame.
+
 
     diagnosticImg = image_mosaic(result, img, warped, warpage)
 
