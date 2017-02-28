@@ -83,7 +83,7 @@ def color_threshold(img, sthresh=(0, 255), vthresh=(0, 255)):
 
     return output
 
-def color_filter(img):
+def white_yellow_binary(img):
     hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 
     yellow = cv2.inRange(hls, (10, 0, 200), (40, 200, 255))
@@ -97,5 +97,21 @@ def color_filter(img):
     output[nonzero[0], nonzero[1]] = 1
 
     return output
+
+def white_yellow_image(img):
+    '''
+    Returns only white and yellow color in the image.
+    Good for detecting white/yellow lane markings in the road image
+    '''
+
+    hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+
+    yellow = cv2.inRange(hls, (10, 0, 200), (40, 200, 255))
+    res = cv2.bitwise_and(img, img, mask=yellow)
+
+    white = cv2.inRange(hls, (10, 200, 150), (40, 255, 255))
+    res2 = cv2.bitwise_and(img, img, mask=white)
+
+    return cv2.bitwise_or(res, res2)
 
     
