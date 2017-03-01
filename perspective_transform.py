@@ -47,11 +47,15 @@ def _fit_ransac_model(pts):
     X = pts[:, [0, 2]].reshape(-1, 1)
     y = pts[:, [1, 3]].reshape(-1, 1)
 
-    model_ransac = linear_model.RANSACRegressor(linear_model.LinearRegression())
+    model_ransac = linear_model.RANSACRegressor(linear_model.LinearRegression(), 
+                                                loss="squared_loss",
+                                                max_trials=150
+                                                )
     model_ransac.fit(X, y)
     return model_ransac.estimator_.coef_[0][0],  model_ransac.estimator_.intercept_[0]
 
 def _computer_corners(rslope, rintercept, lslope, lintercept, ysize=700, backoff=35):
+
     xi = int( (lintercept - rintercept) / (rslope - lslope))
     yi = (rslope * xi + rintercept)
 
@@ -68,12 +72,6 @@ def _computer_corners(rslope, rintercept, lslope, lintercept, ysize=700, backoff
     return [(lx1, ly1), (rx1, ry1), (rx2, ry2), (lx2, ly2)]
 
 def _gradient_color_threshold(img):
-
-    # img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-    
-    # img_yuv[:, :, 0] = cv2.equalizeHist(img_yuv[:, :, 0])
-    # img = cv2.cvtColor(img_yuv, cv2.COLOR_YUV2BGR)
-
     ksize = 9 # Choose a larger odd number to smooth gradient measurements
 
     # # Apply each of the thresholding functions
@@ -85,6 +83,7 @@ def _gradient_color_threshold(img):
     lane_binary = white_yellow_binary(img)
 
     combined = np.zeros_like(img[:,:,0])
+    combined[color_binary == 1] = 255
     combined[ ( (mag_binary == 1) & (dir_binary == 1) ) | lane_binary == 1] = 255
 
     return combined
@@ -153,10 +152,9 @@ def lane_corner_markers(img):
         cv2.imshow('img', result)
 
         k = cv2.waitKey(100)
-
+        k -= 0x100000
         if k == 27 or k == 113:
             break
-
 
     return k
 
