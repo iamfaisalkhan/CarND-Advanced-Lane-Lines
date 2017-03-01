@@ -57,12 +57,12 @@ def _computer_corners(rslope, rintercept, lslope, lintercept, ysize=700, backoff
 
     ry1 = yi + 40
     rx1 = int ( (ry1 - rintercept) / rslope )
-    ry2 = ysize - 10
+    ry2 = ysize - 30
     rx2 = int ( (ry2 - rintercept) / rslope)
 
     ly1 = yi + 40
     lx1 = int ( ( ly1  - lintercept) / lslope )
-    ly2 = ysize - 10
+    ly2 = ysize - 30
     lx2 = int ( ( ly2 - lintercept) / lslope )
 
     return [(lx1, ly1), (rx1, ry1), (rx2, ry2), (lx2, ly2)]
@@ -85,9 +85,7 @@ def _gradient_color_threshold(img):
     lane_binary = white_yellow_binary(img)
 
     combined = np.zeros_like(img[:,:,0])
-    #combined [ ( (gradx == 1) & (grady == 1) | color_binary == 1)] = 255
-    # color_binary = [color_binary == 1 & lane_binary == 1]
-    combined[ ( (mag_binary == 1) & (dir_binary == 1) ) | color_binary == 1] = 255
+    combined[ ( (mag_binary == 1) & (dir_binary == 1) ) | lane_binary == 1] = 255
 
     return combined
 
@@ -98,7 +96,7 @@ def lane_corner_markers(img):
     rho = 1
     theta = np.pi/180
     hough_threshold = 30
-    min_line_len = 30
+    min_line_len = 10
     max_line_gap = 5
 
     src_img = np.copy(img)
@@ -155,9 +153,10 @@ def lane_corner_markers(img):
         cv2.imshow('img', result)
 
         k = cv2.waitKey(100)
-        k -= 0x100000
+
         if k == 27 or k == 113:
             break
+
 
     return k
 
