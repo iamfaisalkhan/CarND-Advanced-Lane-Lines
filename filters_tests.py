@@ -25,7 +25,7 @@ for idx, fname in enumerate(images):
 
 
     combined = np.zeros_like(img[:,:,0])
-    combined [ ( (gradx == 1) & (grady == 1) | color_binary == 1)] = 255
+    combined [ ( (gradx == 1) & (grady == 1) | color_binary == 1)] = 1
 
 
     result = image_mosaic(img, gradx, grady, color_binary, combined)

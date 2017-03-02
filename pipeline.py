@@ -13,7 +13,7 @@ from perspective_transform import PerspectiveTransform
 from tracker import LaneTracker
 
 class LanePipeline():
-    def __init__(self, window_width=35, window_height=80, margin=45):
+    def __init__(self, window_width=45, window_height=120, margin=40):
         # Load previously calibration camera calibraton parameters.
         # If camera is not calibrated, look at the calibration.py for howto do it. 
         self.mtx, self.dist = load_calibration_matrix('camera_cal/dist_pickle.p')
@@ -22,7 +22,7 @@ class LanePipeline():
         self.window_height = window_height
         self.margin = margin
 
-        self.perspective = PerspectiveTransform()
+        self.perspective = PerspectiveTransform(debug=True)
         self.tracker = LaneTracker(self.window_width, 
                                    self.window_height, 
                                    self.margin, 
@@ -49,7 +49,9 @@ class LanePipeline():
         # apply camera distortion
         img = cv2.undistort(img, mtx, dist, None, mtx)
 
-        M, Minv, binary_warped = self.perspective.get_warped_image(img, rerun=False)
+        M, Minv, binary_warped = self.perspective.get_warped_image(img)
+
+        binary_warped = binary_warped / 255
         
         window_centroids = self.tracker.sliding_window_centroids(binary_warped)
 
@@ -144,6 +146,10 @@ class LanePipeline():
         )
 
         # Search area for next frame.
+        from viz import image_mosaic
+        lane_markers, _, _ = self.perspective.get_debug_imgs()
+        result = image_mosaic(result, lane_markers, binary_warped, warpage)
+
         return result
 
         

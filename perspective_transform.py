@@ -111,8 +111,8 @@ class PerspectiveTransform:
         lane_binary = white_yellow_binary(img)
 
         combined = np.zeros_like(img[:,:,0])
-        combined[color_binary == 1] = 255
-        combined[ ( (mag_binary == 1) & (dir_binary == 1) ) | lane_binary == 1] = 255
+        # combined[lane_binary == 1] = 255
+        combined[ ( (mag_binary == 1) & (dir_binary == 1) ) | color_binary == 1] = 255
 
         return combined
 
@@ -187,6 +187,7 @@ class PerspectiveTransform:
         else:
             try:
                 src = self._get_lane_corners(img)
+                self.last_src_points = src
             except Exception as e:
                 print ("Automatic perspective point failed")
 
