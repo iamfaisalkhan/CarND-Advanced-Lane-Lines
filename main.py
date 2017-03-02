@@ -56,6 +56,6 @@ def write_out_video(input, output):
     video_clip.write_videofile(output, audio=False)
 
 if __name__ == "__main__":
-    process_video()
+    # process_video()
     # process_images()
-    # write_out_video('project_video2.mp4', 'project_video2_tracked.mp4')
+    write_out_video('project_video.mp4', 'project_video_tracked.mp4')

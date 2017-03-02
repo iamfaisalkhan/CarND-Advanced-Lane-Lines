@@ -17,9 +17,7 @@ class LaneTracker():
         self.ym_per_pix = ym_pix
         self.xm_per_pix = xm_pix
         
-
     def sliding_window_centroids(self, warped):
-
         window_width = self.window_width
         window_height = self.window_height
 

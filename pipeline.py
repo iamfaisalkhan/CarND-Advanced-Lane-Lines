@@ -13,7 +13,7 @@ from perspective_transform import PerspectiveTransform
 from tracker import LaneTracker
 
 class LanePipeline():
-    def __init__(self, window_width=45, window_height=120, margin=40):
+    def __init__(self, window_width=35, window_height=120, margin=40):
         # Load previously calibration camera calibraton parameters.
         # If camera is not calibrated, look at the calibration.py for howto do it. 
         self.mtx, self.dist = load_calibration_matrix('camera_cal/dist_pickle.p')
@@ -76,7 +76,7 @@ class LanePipeline():
         warpage = np.array(cv2.merge( (binary_warped, binary_warped, binary_warped)), np.uint8)
         warpage = cv2.addWeighted(warpage, 1, template, 0.5, 0.0)
 
-        yvals = np.arange(0, binary_warped.shape[0])
+        yvals = np.arange(100, binary_warped.shape[0])
 
         # y value of the window centroid
         y_centers = np.arange(binary_warped.shape[0]-(window_height/2), 0, -window_height)
@@ -90,30 +90,19 @@ class LanePipeline():
         right_fitx = right_fit[0]*yvals*yvals + right_fit[1]*yvals + right_fit[2]
         right_fitx = np.array(right_fitx, np.int32)
 
-        left_lane = np.array(list(zip(
-                        np.concatenate((left_fitx-window_width/2, left_fitx[::-1]+window_width/2), axis=0),
-                        np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
-        right_lane = np.array(list(zip(
-                        np.concatenate((right_fitx-window_width/2, right_fitx[::-1]+window_width/2), axis=0),
-                        np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
         inner_lane = np.array(list(zip(
                         np.concatenate((left_fitx+window_width/2, right_fitx[::-1]+window_width/2), axis=0),
                         np.concatenate((yvals, yvals[::-1]), axis=0))), np.int32)
 
         road = np.zeros_like(img)
-        road_bkg = np.zeros_like(img)
 
-        cv2.fillPoly(road, [left_lane], color=[255, 0, 0])
-        cv2.fillPoly(road, [right_lane], color=[0, 0, 255])
         cv2.fillPoly(road, [inner_lane], color=[0, 255, 0])
-        cv2.fillPoly(road_bkg, [left_lane], color=[255, 255, 255])
-        cv2.fillPoly(road_bkg, [right_lane], color=[255, 255, 255])
 
         road_warped = cv2.warpPerspective(road, Minv, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
-        road_warped_bkg = cv2.warpPerspective(road_bkg, Minv, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
+        # road_warped_bkg = cv2.warpPerspective(road_bkg, Minv, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
 
-        base = cv2.addWeighted(img, 1.0, road_warped_bkg, -1.0, 0.0)
-        result = cv2.addWeighted(base, 1.0, road_warped, 0.4, 0.0)
+        # base = cv2.addWeighted(img, 1.0, road_warped_bkg, -1.0, 0.0)
+        result = cv2.addWeighted(img, 1.0, road_warped, 0.4, 0.0)
 
         ym_per_pix = self.tracker.ym_per_pix
         xm_per_pix = self.tracker.xm_per_pix
@@ -151,6 +140,3 @@ class LanePipeline():
         result = image_mosaic(result, lane_markers, binary_warped, warpage)
 
         return result
-
-        
-

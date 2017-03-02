@@ -3,7 +3,8 @@ import cv2
 import numpy as np
 import glob
 
-from filters import white_yellow_binary
+from filters import hsv_binary
+from filters import hls_binary
 from filters import abs_sobel_thresh
 from filters import color_threshold
 from filters import mag_thresh
@@ -107,11 +108,10 @@ class PerspectiveTransform:
         # # Apply each of the thresholding functions
         mag_binary = mag_thresh(img, ksize, (131, 255))
         dir_binary = dir_threshold(img, ksize, (0.5, np.pi))
-        color_binary = color_threshold(img, (170, 255), (175, 255))
-        lane_binary = white_yellow_binary(img)
+        color_binary = color_threshold(img, (70, 255), (70, 255))
 
         combined = np.zeros_like(img[:,:,0])
-        # combined[lane_binary == 1] = 255
+        combined[hsv_binary(img) == 1 | hls_binary(img)] = 255
         combined[ ( (mag_binary == 1) & (dir_binary == 1) ) | color_binary == 1] = 255
 
         return combined

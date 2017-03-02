@@ -83,7 +83,7 @@ def color_threshold(img, sthresh=(0, 255), vthresh=(0, 255)):
 
     return output
 
-def white_yellow_binary(img):
+def hls_binary(img):
     '''
     Returns a binary image corresponding to pixels with
     white and yellow color in the image.
@@ -103,20 +103,29 @@ def white_yellow_binary(img):
 
     return output
 
-def white_yellow_image(img):
-    '''
-    Returns only white and yellow color in the image.
-    Good for detecting white/yellow lane markings in the road image
-    '''
-
-    hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-
-    yellow = cv2.inRange(hls, (10, 0, 200), (40, 200, 255))
-    res = cv2.bitwise_and(img, img, mask=yellow)
-
-    white = cv2.inRange(hls, (10, 200, 150), (40, 255, 255))
-    res2 = cv2.bitwise_and(img, img, mask=white)
 
     return cv2.bitwise_or(res, res2)
 
-    
+def hsv_binary(img):
+
+    hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
+    # Yello color range
+    lower_yellow = np.array([20, 100, 200])
+    upper_yellow = np.array([85, 255, 255])
+
+    yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+
+    # White color range. 
+    sensitivy = 45
+    lower_white = np.array([0, 0, 255 - sensitivy])
+    upper_white = np.array([255, sensitivy, 255])
+    white = cv2.inRange(hsv, lower_white, upper_white)
+
+    output = np.zeros_like(hsv[:, :, 1])
+    nonzero = yellow.nonzero()
+    output[nonzero[0], nonzero[1]] = 1
+    nonzero = white.nonzero()
+    output[nonzero[0], nonzero[1]] = 1
+
+    return output
