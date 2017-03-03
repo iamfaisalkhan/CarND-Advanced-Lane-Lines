@@ -147,8 +147,8 @@ The pipeline
 ###Pipeline Videos
 
 
-1. Result of project video : [project_video.mp4](./project_video.mp4)
-2. Challenge video : [challenge_video.mp4](./challenge_video.mp4)
+1. Result of project video : [project_video.mp4](./project_video_out.mp4)
+2. Challenge video : [challenge_video.mp4](./challenge_video_out.mp4)
 
 ---
 
