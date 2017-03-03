@@ -28,7 +28,7 @@ def process_video():
     pipeline = LanePipeline()
 
     # cap = cv2.VideoCapture('project_video.mp4')
-    cap = cv2.VideoCapture('challenge_video.mp4')
+    # cap = cv2.VideoCapture('challenge_video.mp4')
     # fourcc = cv2.VideoWriter_fourcc(*'MP4V')
     # out = cv2.VideoWriter('video.mp4', fourcc, 25, (1280, 720))
 
@@ -56,5 +56,4 @@ def write_out_video(input, output):
     video_clip.write_videofile(output, audio=False)
 
 if __name__ == "__main__":
-    # process_video()
     write_out_video(sys.argv[1], sys.argv[2])

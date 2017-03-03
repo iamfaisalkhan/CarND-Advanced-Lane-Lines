@@ -54,7 +54,7 @@ The undistored image is produced using the `cv2.undistort()`. The calibration pa
 
 ###Pipeline 
 
-In this section, we walk you through the pipeline steps using the following image as asn example.
+In this section, we walk you through the pipeline steps using the following image as an example.
 
 ![alt text][image2]
 
@@ -66,7 +66,7 @@ The first step in our pipeline is to undistort the image using the calibration m
 
 ####2. Color / Gradient Transformation
 
-We use a combination of color and gradient thresholding to obtain a binary image suitable for finding the points on the lane before fitting a second-degree polynomial. Specifically, the magnitude and direction of image gradient is thresholded along with filtering the image based on the white and yellow colors using HSV and HLS color space. More details is in `perspective_transform.py:_get_threshold_img(lines 105-117)`. The `filters.py` has a collection of different image filters used in this project. 
+We use a combination of color and gradient thresholding to obtain a binary image suitable for finding the points on the lane before fitting a second-degree polynomial. Specifically, the magnitude and direction of image gradient is thresholded along with the filtering of the image based on the white and yellow colors using HSV and HLS color space. More details is in `perspective_transform.py:_get_threshold_img(lines 105-117)`. The `filters.py` has a collection of different image filters used in this project. 
 
 As we are assuming that camera is mounted at the center of the car, we also set a region of interest to seperate area around the lanes from the rest of the image. 
 
@@ -94,19 +94,19 @@ The result from this step are shown below (with and without region of interest)
 
 The code for perspective transform is in `perspective_transform.py:get_warped_image (line 208)`. 
 
-The perspective points are computed automatically by fitting a linear regression line through the left and right lanes and using the slope/intercept of these lines to compute the corners of the lane lines. Using the hough transformation, we compute candidate lines/points in the image and then divide these points in the left and right lane points based on the slope value. 
+The perspective points are computed automatically by fitting a linear regression line through the left and right lanes and using the slope/intercept of these lines to compute the corners of the lane lines. The hough transformation is used to compute the  candidate lines/points in the image. These points are further divided into the left and right lane points based on the slope value. 
 
 ![alt text][image6]
 
-A RANSAC bassed linear fitting model [2] is used to compute the slope/intercept of best line passing through these points for both the left and right lanes. 
+A RANSAC based linear fitting model [2] is used to compute the slope/intercept of the best line passing through these points for both the left and right lanes. 
 
 ![alt text][image7]
 
-The four source points at the end of this process are visualized below. These corner points are used as the source points for our perspective transformation. 
+The four points computed at the end of this process are visualized below. These corner points are used as the source points for our perspective transformation. 
 
 ![alt text][image8]
 
-This process is done only once on the frist frame. However as a fall back, if the detection of these 'corner' points fail, we use static points (see `perspective_transform.py:215-235`). The corresponding destination points are set as follows:
+This process is done only once for the first frame and the source points are reused through the tracking session. However as a fall back, if the detection of these 'corner' points fail, we use static points (see `perspective_transform.py:215-235`). The corresponding destination points are set as follows:
 
 ```
 offset = img.shape[1] * .25
@@ -124,9 +124,9 @@ The final bird eye view of the image using both the original image and threshold
 
 ####4. Cureve Fitting
 
-We use a second-degree polynomial to model the shape of the road. Two seperate polynomials are used to model the right and left lanes. A sliding window algorithm is used to compute points on the lanes that are then used to fit these polynomials. The sliding window algorithm first computes candiate position on the image by computing a column wise histogram of the lower 3/4th of the image. The histogram of the columns is convolved with a 1-D singal to find the peaks corresponding to two lanes in the warped image. After finding two candidates points, a window is slided through the height of the image searching for next histogram peaks in the vicinity of these candidate points. 
+We use a second-degree polynomial to model the shape of the road. Two separate polynomials are used to model the right and left lanes. A sliding window algorithm is used to compute points on the lanes that are then used to fit these polynomials. The sliding window algorithm first computes candidate positions on the image by computing a column wise histogram of the lower 3/4th of the image. The histogram of the columns is convolved with a 1-D signal to find the peaks corresponding to two lanes in the warped image. After finding two candidates points, a window is slided through the height of the image searching for next histogram peaks in the vicinity of these candidate points. 
 
-These steps are implented in `tracker.py:sliding_window_centroids(line 20-)`. 
+These steps are implemented in `tracker.py:sliding_window_centroids(line 20-)`. 
 
 The results of the sliding window algorithm is shown below.
 
@@ -134,7 +134,7 @@ The results of the sliding window algorithm is shown below.
 
 ####5. Radius of the Curvature.
 
-The radius of the curvature of the road is computed using the formula given here [4]. The implemenation is given in `pipeline.py:process()-line#107-117`. 
+The radius of the curvature of the road is computed using the formula given here [4]. The implementation is given in `pipeline.py:process()-line#107-117`. 
 
 ####6. Final Result.
 
@@ -147,7 +147,7 @@ The pipeline
 ###Pipeline Videos
 
 
-1. Result of proejct video : [project_video.mp4](./project_video.mp4)
+1. Result of project video : [project_video.mp4](./project_video.mp4)
 2. Challenge video : [challenge_video.mp4](./challenge_video.mp4)
 
 ---
@@ -158,12 +158,12 @@ Using a combination of color and gradient thresholding we were able to handle, f
 
 The automatic detection of the perspective points makes our pipeline little more generic as we can get a good warped image for different type of videos and possibly camera positions. 
 
-The pipeline generally fails under tricky lighting condition or sharp curves as we are not able to either distinguish between background and lane color or window width +/- margin misses the actual lanes. To handle such situations, we need extra constrains and make our sliding window more adaptive based on the sharpness of the curve detected in previous frame(s). 
+The pipeline generally fails under tricky lighting condition or sharp curves as we are not able to either distinguish between background and lane colors or our window width +/- margin misses the actual lanes. To handle such situations, we need extra constrains and make our sliding window more adaptive based on the sharpness of the curve detected in previous frame(s). 
 
-The RANSAC method use for finding a good linear fit for perspective might also be able to handle outlier when fitting a polynomial. This might also improve the stability of the tracking. 
+The RANSAC method use for finding a good linear fit for perspective transform might also be able to handle outliers when fitting a polynomial. This might also improve the overall stability of the tracking. 
 
 
-#### Referneces
+#### References
 * [1] http://docs.opencv.org/3.0-beta/doc/py_tutorials/py_calib3d/py_calibration/py_calibration.html
 * [2] http://scikit-learn.org/stable/auto_examples/linear_model/plot_ransac.html#sphx-glr-auto-examples-linear-model-plot-ransac-py
 * [3] https://www.youtube.com/watch?v=vWY8YUayf9Q
