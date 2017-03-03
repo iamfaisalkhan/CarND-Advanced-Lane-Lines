@@ -21,7 +21,7 @@
 A briref overview of what's in the repository.
 
 * **[main.py](./main.py)**: Launches the pipeline. 
-* **[pipeline.py](./pipeline.py)** : It contains LanePipeline class that tie together all the components of our pipeline. The process() method process a single image and pipeline state is mainted through class variables.
+* **[pipeline.py](./pipeline.py)** : It contains LanePipeline class that tie together all the components of our pipeline. The process() method process a single image and pipeline state is maintained through class variables.
 * **[perspective_transform.py](perspective_transform.py)**: Have the code for PerspectiveTransform class. This class computes the warped image by first detecting 4 lane markers as source points and then reusing them for each subsequent call to get the warped image.
 * **[tracker.py](./tracker.py)**: The LaneTracker class have the main logic for sliding window. 
 * **[filters.py](./filters.py)**: Have all the color and gradient image filter. 
@@ -46,9 +46,9 @@ The two main arguments to this methods are:
 * object points : A set of 3D points of an object in real world space.
 * image points : Corresponding 2D points on the same object in image space. 
 
-We use a series of points from images of chessboard patterns taken at differnt camera positions as object points. The chessboard is assumed to be at fixed X, Y positions with Z=0. The corresponding points in the image space are computed using `cv2.findChessboardCorners()` that returns the corners of the chessboard. 
+We use a series of points from images of chessboard patterns taken at different camera positions as object points. The chessboard is assumed to be at fixed X, Y positions with Z=0. The corresponding points in the image space are computed using `cv2.findChessboardCorners()` that returns the corners of the chessboard. 
 
-The undistored image is produced using the `cv2.undistort()`. The calibraiton parameters are stored as a pickle file for future use. 
+The undistored image is produced using the `cv2.undistort()`. The calibration parameters are stored as a pickle file for future use. 
 
 ![alt text][image1]
 
@@ -66,7 +66,7 @@ The first step in our pipeline is to undistort the image using the calibration m
 
 ####2. Color / Gradient Transformation
 
-We use a combination of color and gradient thresholding to obtain a binary image suitable for finding the ponits on the lane before fitting a second-degree polynomial. Specifically, the magnitude and direction of image gradient is thresholded along with filtering the image based on the white and yellow colors using HSV and HLS colorspace. More details is in `perspective_transform.py:_get_threshold_img(lines 105-117)`. The `filters.py` has a collection of different image filters used in this project. 
+We use a combination of color and gradient thresholding to obtain a binary image suitable for finding the points on the lane before fitting a second-degree polynomial. Specifically, the magnitude and direction of image gradient is thresholded along with filtering the image based on the white and yellow colors using HSV and HLS color space. More details is in `perspective_transform.py:_get_threshold_img(lines 105-117)`. The `filters.py` has a collection of different image filters used in this project. 
 
 As we are assuming that camera is mounted at the center of the car, we also set a region of interest to seperate area around the lanes from the rest of the image. 
 
@@ -90,7 +90,7 @@ The result from this step are shown below (with and without region of interest)
 
 ![alt text][image5]
 
-####3.Perspective Trnasformation
+####3.Perspective Transformation
 
 The code for perspective transform is in `perspective_transform.py:get_warped_image (line 208)`. 
 
@@ -158,7 +158,7 @@ Using a combination of color and gradient thresholding we were able to handle, f
 
 The automatic detection of the perspective points makes our pipeline little more generic as we can get a good warped image for different type of videos and possibly camera positions. 
 
-The pipeline generally fails under tricky lighting condtion or sharp curves as we are not able to either distinguish betwen background and lane color or window width +/- margin misses the actual lanes. To handle such situtions, we need extra constrains and make our sliding window more adaptive based on the sharpness of the curve detected in previous frame(s). 
+The pipeline generally fails under tricky lighting condition or sharp curves as we are not able to either distinguish between background and lane color or window width +/- margin misses the actual lanes. To handle such situations, we need extra constrains and make our sliding window more adaptive based on the sharpness of the curve detected in previous frame(s). 
 
 The RANSAC method use for finding a good linear fit for perspective might also be able to handle outlier when fitting a polynomial. This might also improve the stability of the tracking. 
 
