@@ -142,7 +142,11 @@ class PerspectiveTransform:
             self.lanes_img = np.copy(self.recent_img)
             for line in lines:
                 for x1,y1,x2,y2 in line:
-                    cv2.line(self.lanes_img, (x1, y1), (x2, y2), [0, 0, 255], 3)
+                    slope = (y2 - y1) / (x2 - x1)
+                    color=[255, 0, 0]
+                    if slope < 0.0:
+                        color=[0, 0, 255]
+                    cv2.line(self.lanes_img, (x1, y1), (x2, y2), color, 3)
 
         return lines
 

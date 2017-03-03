@@ -39,7 +39,6 @@ class LanePipeline():
         return output
 
     def process(self, img):
-
         mtx = self.mtx
         dist = self.dist
         window_width = self.window_width
@@ -136,7 +135,7 @@ class LanePipeline():
 
         # Search area for next frame.
         from viz import image_mosaic
-        lane_markers, _, _ = self.perspective.get_debug_imgs()
-        result = image_mosaic(result, lane_markers, binary_warped, warpage)
+        lane_markers, canny, lanes = self.perspective.get_debug_imgs()
+        result = image_mosaic(result, canny, lanes, lane_markers, binary_warped, warpage)
 
         return result
